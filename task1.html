@@ -1,0 +1,232 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Job Board</title>
+
+<style>
+body {
+    font-family: 'Segoe UI';
+    margin: 0;
+    background: #eef2f7;
+}
+
+/* NAVBAR */
+nav {
+    background: #1e293b;
+    color: white;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+}
+
+nav button {
+    background: #3b82f6;
+    border: none;
+    padding: 8px 12px;
+    color: white;
+    cursor: pointer;
+}
+
+/* CONTAINER */
+.container {
+    padding: 20px;
+    text-align: center;
+}
+
+.hidden { display: none; }
+
+/* CARD */
+.card {
+    background: white;
+    padding: 20px;
+    margin: 15px auto;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+    text-align: left;
+}
+
+input, textarea {
+    width: 90%;
+    padding: 10px;
+    margin: 8px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+button {
+    padding: 10px;
+    margin: 5px;
+    border: none;
+    border-radius: 5px;
+    background: #3b82f6;
+    color: white;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #2563eb;
+}
+
+/* HERO */
+.hero {
+    background: linear-gradient(to right, #3b82f6, #06b6d4);
+    color: white;
+    padding: 40px;
+}
+
+/* MOBILE */
+@media(max-width:600px){
+    .card { width: 95%; }
+}
+</style>
+
+</head>
+
+<body>
+
+<nav>
+<h2>Job Board</h2>
+<div>
+<button onclick="show('home')">Home</button>
+<button onclick="show('post')">Post Job</button>
+<button onclick="showJobs()">Jobs</button>
+</div>
+</nav>
+
+<!-- HOME -->
+<div id="home" class="container">
+<div class="hero">
+<h1>Find Your Dream Job 💼</h1>
+<p>Post jobs or apply easily</p>
+</div>
+</div>
+
+<!-- POST JOB -->
+<div id="post" class="container hidden">
+<div class="card">
+<h2>Post a Job</h2>
+<input id="title" placeholder="Job Title">
+<input id="company" placeholder="Company Name">
+<input id="location" placeholder="Location">
+<textarea id="desc" placeholder="Job Description"></textarea>
+<button onclick="postJob()">Post Job</button>
+</div>
+</div>
+
+<!-- JOB LIST -->
+<div id="jobs" class="container hidden">
+<h2>Available Jobs</h2>
+<input placeholder="Search jobs..." oninput="searchJobs(this.value)">
+<div id="jobList"></div>
+</div>
+
+<!-- JOB DETAIL -->
+<div id="detail" class="container hidden">
+<div class="card">
+<h2 id="jobTitle"></h2>
+<p id="jobCompany"></p>
+<p id="jobDesc"></p>
+
+<h3>Apply Now</h3>
+<form onsubmit="applyJob(event)">
+<input type="text" placeholder="Your Name" required>
+<input type="email" placeholder="Email" required>
+<input type="file" required>
+<button type="submit">Submit Application</button>
+</form>
+</div>
+</div>
+
+<script>
+let jobs = JSON.parse(localStorage.getItem("jobs")) || [];
+let currentIndex = null;
+
+/* NAVIGATION */
+function show(id){
+    document.querySelectorAll(".container").forEach(c => c.classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+}
+
+/* POST JOB */
+function postJob(){
+    let job = {
+        title: title.value,
+        company: company.value,
+        location: location.value,
+        desc: desc.value
+    };
+
+    if(!job.title || !job.company){
+        alert("Please fill required fields");
+        return;
+    }
+
+    jobs.push(job);
+    localStorage.setItem("jobs", JSON.stringify(jobs));
+
+    alert("✅ Job Posted Successfully!");
+    show("jobs");
+    displayJobs(jobs);
+}
+
+/* DISPLAY JOBS */
+function displayJobs(list){
+    jobList.innerHTML = "";
+
+    if(list.length === 0){
+        jobList.innerHTML = "<p>No jobs found</p>";
+        return;
+    }
+
+    list.forEach((job, index) => {
+        jobList.innerHTML += `
+        <div class="card">
+            <h3>${job.title}</h3>
+            <p><b>${job.company}</b> - ${job.location}</p>
+            <button onclick="viewJob(${index})">View Details</button>
+        </div>`;
+    });
+}
+
+/* SHOW JOBS */
+function showJobs(){
+    show("jobs");
+    displayJobs(jobs);
+}
+
+/* SEARCH */
+function searchJobs(val){
+    let filtered = jobs.filter(j =>
+        j.title.toLowerCase().includes(val.toLowerCase()) ||
+        j.company.toLowerCase().includes(val.toLowerCase())
+    );
+    displayJobs(filtered);
+}
+
+/* VIEW JOB */
+function viewJob(index){
+    currentIndex = index;
+    let job = jobs[index];
+
+    jobTitle.innerText = job.title;
+    jobCompany.innerText = job.company + " | " + job.location;
+    jobDesc.innerText = job.desc;
+
+    show("detail");
+}
+
+/* APPLY */
+function applyJob(e){
+    e.preventDefault();
+    alert("🎉 Application Submitted Successfully!");
+    showJobs();
+}
+</script>
+
+</body>
+</html>
