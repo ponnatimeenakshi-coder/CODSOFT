@@ -1,0 +1,329 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Online Quiz Maker</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    background: #eef2f3;
+    text-align: center;
+}
+
+/* Header */
+header {
+    background: #2c3e50;
+    color: white;
+    padding: 15px;
+}
+
+/* Buttons */
+button {
+    padding: 10px 15px;
+    margin: 10px;
+    border: none;
+    background: #3498db;
+    color: white;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+button:hover {
+    background: #2980b9;
+}
+
+/* Inputs */
+input {
+    padding: 10px;
+    margin: 8px;
+    width: 80%;
+    max-width: 300px;
+}
+
+/* Sections */
+.hidden {
+    display: none;
+}
+
+.container {
+    padding: 20px;
+}
+
+/* Question box */
+.question {
+    background: white;
+    padding: 15px;
+    margin: 10px auto;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 10px;
+}
+
+/* Mobile */
+@media (max-width: 600px) {
+    button {
+        width: 80%;
+    }
+}
+</style>
+
+</head>
+
+<body>
+
+<header>
+    <h1>Online Quiz Maker</h1>
+    <p id="userInfo"></p>
+</header>
+
+<!-- AUTH -->
+<div id="auth" class="container">
+    <h2>Login / Register</h2>
+    <input id="username" placeholder="Username"><br>
+    <input id="password" type="password" placeholder="Password"><br>
+    <button onclick="register()">Register</button>
+    <button onclick="login()">Login</button>
+</div>
+
+<!-- HOME -->
+<div id="home" class="container hidden">
+    <h2>Welcome!</h2>
+    <button onclick="showSection('create')">Create Quiz</button>
+    <button onclick="loadQuizzes()">Take Quiz</button>
+    <button onclick="logout()">Logout</button>
+</div>
+
+<!-- CREATE QUIZ -->
+<div id="create" class="container hidden">
+    <h2>Create Quiz</h2>
+    <input id="quizTitle" placeholder="Quiz Title"><br>
+
+    <div id="questions"></div>
+
+    <button onclick="addQuestion()">Add Question</button>
+    <button onclick="saveQuiz()">Save Quiz</button>
+    <button onclick="showSection('home')">Back</button>
+</div>
+
+<!-- QUIZ LIST -->
+<div id="quizList" class="container hidden">
+    <h2>Available Quizzes</h2>
+    <div id="quizContainer"></div>
+    <button onclick="showSection('home')">Back</button>
+</div>
+
+<!-- TAKE QUIZ -->
+<div id="quiz" class="container hidden">
+    <h2 id="quizName"></h2>
+    <div id="questionBox"></div>
+    <button onclick="nextQuestion()">Next</button>
+</div>
+
+<!-- RESULT -->
+<div id="result" class="container hidden">
+    <h2>Result</h2>
+    <p id="score"></p>
+    <div id="answers"></div>
+    <button onclick="showSection('home')">Home</button>
+</div>
+
+<script>
+let users = JSON.parse(localStorage.getItem("users")) || [];
+let quizzes = JSON.parse(localStorage.getItem("quizzes")) || [];
+let currentUser = localStorage.getItem("currentUser");
+
+let currentQuiz, currentQ, score, userAnswers;
+
+/* Show Sections */
+function showSection(id) {
+    document.querySelectorAll(".container").forEach(sec => sec.classList.add("hidden"));
+    document.getElementById(id).classList.remove("hidden");
+}
+
+/* Register */
+function register() {
+    let u = username.value;
+    let p = password.value;
+
+    if (!u || !p) return alert("Enter details!");
+
+    users.push({ u, p });
+    localStorage.setItem("users", JSON.stringify(users));
+
+    alert("Registered Successfully!");
+}
+
+/* Login */
+function login() {
+    let u = username.value;
+    let p = password.value;
+
+    let user = users.find(x => x.u === u && x.p === p);
+
+    if (user) {
+        currentUser = u;
+        localStorage.setItem("currentUser", u);
+        startApp();
+    } else {
+        alert("Invalid login!");
+    }
+}
+
+/* Logout */
+function logout() {
+    localStorage.removeItem("currentUser");
+    location.reload();
+}
+
+/* Start App */
+function startApp() {
+    document.getElementById("auth").classList.add("hidden");
+    showSection("home");
+    userInfo.innerText = "Logged in as: " + currentUser;
+}
+
+if (currentUser) startApp();
+
+/* Add Question */
+function addQuestion() {
+    let div = document.createElement("div");
+    div.className = "question";
+
+    div.innerHTML = `
+    <input placeholder="Question"><br>
+    <input placeholder="Option 1"><br>
+    <input placeholder="Option 2"><br>
+    <input placeholder="Option 3"><br>
+    <input placeholder="Option 4"><br>
+    <input placeholder="Correct Answer (1-4)">
+    `;
+
+    questions.appendChild(div);
+}
+
+/* Save Quiz */
+function saveQuiz() {
+    let title = quizTitle.value;
+    let qDivs = document.querySelectorAll(".question");
+
+    if (!title || qDivs.length === 0) {
+        alert("Fill all fields!");
+        return;
+    }
+
+    let quiz = { title, questions: [] };
+
+    qDivs.forEach(div => {
+        let inputs = div.querySelectorAll("input");
+
+        quiz.questions.push({
+            q: inputs[0].value,
+            options: [
+                inputs[1].value,
+                inputs[2].value,
+                inputs[3].value,
+                inputs[4].value
+            ],
+            correct: inputs[5].value
+        });
+    });
+
+    quizzes.push(quiz);
+    localStorage.setItem("quizzes", JSON.stringify(quizzes));
+
+    alert("Quiz Saved!");
+    showSection("home");
+}
+
+/* Load Quizzes */
+function loadQuizzes() {
+    showSection("quizList");
+
+    quizContainer.innerHTML = "";
+
+    quizzes.forEach((q, i) => {
+        quizContainer.innerHTML += `
+        <div class="question">
+            <h3>${q.title}</h3>
+            <button onclick="startQuiz(${i})">Start</button>
+        </div>`;
+    });
+}
+
+/* Start Quiz */
+function startQuiz(i) {
+    currentQuiz = quizzes[i];
+    currentQ = 0;
+    score = 0;
+    userAnswers = [];
+
+    showSection("quiz");
+    quizName.innerText = currentQuiz.title;
+
+    showQuestion();
+}
+
+/* Show Question */
+function showQuestion() {
+    let q = currentQuiz.questions[currentQ];
+
+    let html = `<h3>${q.q}</h3>`;
+
+    q.options.forEach((opt, i) => {
+        html += `
+        <label>
+        <input type="radio" name="ans" value="${i+1}"> ${opt}
+        </label><br>`;
+    });
+
+    questionBox.innerHTML = html;
+}
+
+/* Next Question */
+function nextQuestion() {
+    let selected = document.querySelector('input[name="ans"]:checked');
+
+    if (!selected) return alert("Select an answer!");
+
+    userAnswers.push(selected.value);
+
+    if (selected.value == currentQuiz.questions[currentQ].correct) {
+        score++;
+    }
+
+    currentQ++;
+
+    if (currentQ < currentQuiz.questions.length) {
+        showQuestion();
+    } else {
+        showResult();
+    }
+}
+
+/* Show Result */
+function showResult() {
+    showSection("result");
+
+    score.innerText = `Score: ${score}/${currentQuiz.questions.length}`;
+
+    let html = "";
+
+    currentQuiz.questions.forEach((q, i) => {
+        html += `
+        <p>
+        ${q.q}<br>
+        Correct: ${q.options[q.correct-1]}<br>
+        Your Answer: ${q.options[userAnswers[i]-1]}
+        </p>`;
+    });
+
+    answers.innerHTML = html;
+}
+</script>
+
+</body>
+</html>
